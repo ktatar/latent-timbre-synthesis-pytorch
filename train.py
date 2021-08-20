@@ -64,6 +64,8 @@ my_audio = dataset / 'audio'
 epochs = config['training'].getint('epochs')
 learning_rate = config['training'].getfloat('learning_rate')
 batch_size = config['training'].getint('batch_size')
+checkpoint_interval = config['training'].getint('checkpoint_interval')
+save_best_model_after = config['training'].getint('save_best_model_after')
 
 #Model configs
 latent_dim = config['VAE'].getint('latent_dim')
@@ -140,7 +142,8 @@ with open(config_path, 'w') as configfile:
 
 # Train
 model_dir = workdir / "model"
-os.makedirs(model_dir,exist_ok=True)
+checkpoint_dir = model_dir / 'checkpoints'
+os.makedirs(checkpoint_dir, exist_ok=True)
 
 log_dir = workdir / 'logs'
 os.makedirs(log_dir, exist_ok=True)
@@ -193,13 +196,18 @@ def loss_function(recon_x, x, mu, logvar, kl_beta):
 
     return recon_loss + ( kl_beta * KLD)
 
+train_loss_prev = 1000000
+
 for epoch in range(epochs):
+  
   print('Epoch {}/{}'.format(epoch, epochs - 1))
   print('-' * 10)
 
   model.train()
   train_loss = 0
+  
   for i, data in enumerate(training_dataloader):
+    
     data, = data
     data = data.to(device)
     optimizer.zero_grad()
@@ -208,10 +216,26 @@ for epoch in range(epochs):
     loss.backward()
     train_loss += loss.item()
     optimizer.step()
-  print('====> Epoch: {} Average loss: {:.8f}'.format(
+  
+  print('====> Epoch: {} Average loss: {:.9f}'.format(
           epoch, train_loss / len(training_dataloader.dataset)))
-
-pdb.set_trace()
+  
+  if epoch % checkpoint_interval == 0: 
+    
+    state = {
+      'epoch': epoch,
+      'state_dict': model.state_dict(),
+      'optimizer': optimizer.state_dict()
+      }
+      
+    torch.save(state, checkpoint_dir.joinpath('ckpt_{:05d}'.format(epoch)))
+  
+  if (train_loss < train_loss_prev) and (save_best_model_after > epoch):
+    
+    save_path = workdir.joinpath('model').joinpath('best_model.pt')
+    torch.save(model, save_path)
 
 save_path = workdir.joinpath('model').joinpath('last_model.pt')
 torch.save(model, save_path)
+
+# pdb.set_trace()
