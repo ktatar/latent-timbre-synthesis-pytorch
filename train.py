@@ -8,6 +8,9 @@ from torch import nn, optim
 from torch.nn import functional as F
 from torchvision import datasets, transforms
 
+from cabbage.model import VAE, loss_function
+from cabbage.tests import init_test_audio
+
 import random
 import numpy as np
 
@@ -15,18 +18,19 @@ import os, sys, argparse, time
 from pathlib import Path
 
 import librosa
+import soundfile as sf
 import configparser
 import random
 import json
 import matplotlib.pyplot as plt
 import pdb
 
-#Parse arguments
+# Parse arguments
 parser = argparse.ArgumentParser()
 parser.add_argument('--config', type=str, default ='./default.ini' , help='path to the config file')
 args = parser.parse_args()
 
-#Get configs
+# Get configs
 config_path = args.config
 config = configparser.ConfigParser(allow_no_value=True)
 try: 
@@ -35,18 +39,28 @@ except FileNotFoundError:
   print('Config File Not Found at {}'.format(config_path))
   sys.exit()
 
-#import audio configs 
-sample_rate = config['audio'].getint('sample_rate')
+# Import audio configs 
+sampling_rate = config['audio'].getint('sampling_rate')
 hop_length = config['audio'].getint('hop_length')
 bins_per_octave = config['audio'].getint('bins_per_octave')
 num_octaves = config['audio'].getint('num_octaves')
 n_bins = int(num_octaves * bins_per_octave)
 n_iter = config['audio'].getint('n_iter')
+cqt_bit_depth = config['audio'].get('cqt_bit_depth')
 
-#dataset
+if cqt_bit_depth == "float64":
+  torch.set_default_dtype(torch.float64)
+  dtype = np.float64
+elif cqt_bit_depth == "float64":
+  torch.set_default_dtype(torch.float32)
+  dtype = np.float32
+else:
+  raise TypeError('{} cqt_bit_depth datatype is unknown. Choose either float32 or float64'.format(cqt_bit_depth))
+
+# Dataset
 dataset = Path(config['dataset'].get('datapath'))
 if not dataset.exists():
-    raise FileNotFoundError(dataset.resolve())
+  raise FileNotFoundError(dataset.resolve())
 
 cqt_dataset = config['dataset'].get('cqt_dataset')
 
@@ -55,25 +69,34 @@ if config['dataset'].get('workspace') != None:
 
 run_number = config['dataset'].getint('run_number')
 my_cqt = dataset / cqt_dataset
+
 if not my_cqt.exists():
-    raise FileNotFoundError(my_cqt.resolve())
+  raise FileNotFoundError(my_cqt.resolve())
 
 my_audio = dataset / 'audio'
-    
-#Training configs
+
+test_audio = config['dataset'].get('test_dataset')
+my_test_audio = dataset / test_audio
+
+if not my_test_audio.exists():
+  raise FileNotFoundError(my_test_audio.resolve())
+
+generate_test = config['dataset'].get('generate_test')    
+
+# Training configs
 epochs = config['training'].getint('epochs')
 learning_rate = config['training'].getfloat('learning_rate')
 batch_size = config['training'].getint('batch_size')
 checkpoint_interval = config['training'].getint('checkpoint_interval')
 save_best_model_after = config['training'].getint('save_best_model_after')
 
-#Model configs
+# Model configs
 latent_dim = config['VAE'].getint('latent_dim')
 n_units = config['VAE'].getint('n_units')
 kl_beta = config['VAE'].getfloat('kl_beta')
 device = config['VAE'].get('device')
 
-#etc
+# etc
 example_length = config['extra'].getint('example_length')
 normalize_examples = config['extra'].getboolean('normalize_examples')
 plot_model = config['extra'].getboolean('plot_model')
@@ -83,15 +106,11 @@ start_time = time.time()
 config['extra']['start'] = time.asctime( time.localtime(start_time) )
 
 device = torch.device(device)
-if torch.cuda.is_available():
-  print(torch.cuda.get_device_name())
+device_name = torch.cuda.get_device_name()
+print('Device: {}'.format(device_name))
+config['VAE']['device_name'] = device_name
 
-else:
-  print("Running on CPU.......")
-
-#Create workspace
-
-
+# Create workspace
 run_id = run_number
 while True:
     try:
@@ -111,7 +130,7 @@ config['dataset']['workspace'] = str(workdir.resolve())
 
 print("Workspace: {}".format(workdir))
 
-#create the dataset
+# Create the dataset
 print('creating the dataset...')
 training_array = []
 new_loop = True
@@ -148,55 +167,22 @@ os.makedirs(checkpoint_dir, exist_ok=True)
 log_dir = workdir / 'logs'
 os.makedirs(log_dir, exist_ok=True)
 
-class VAE(nn.Module):
-  def __init__(self, n_bins, n_units, latent_dim):
-    super(VAE, self).__init__()
+# Move this part below to a util function in a python module
 
-    self.n_bins = n_bins
-    self.n_units = n_units
-    self.latent_dim = latent_dim
-    
-    self.fc1 = nn.Linear(n_bins, n_units)
-    self.fc21 = nn.Linear(n_units, latent_dim)
-    self.fc22 = nn.Linear(n_units, latent_dim)
-    self.fc3 = nn.Linear(latent_dim, n_units)
-    self.fc4 = nn.Linear(n_units, n_bins)
+if generate_test:
 
-  def encode(self, x):
-      h1 = F.relu(self.fc1(x))
-      return self.fc21(h1), self.fc22(h1)
+  test_dataloader, audio_log_dir = init_test_audio(workdir, test_audio, my_test_audio, my_cqt, batch_size, sampling_rate)
 
-  def reparameterize(self, mu, logvar):
-      std = torch.exp(0.5*logvar)
-      eps = torch.randn_like(std)
-      return mu + eps*std
-
-  def decode(self, z):
-      h3 = F.relu(self.fc3(z))
-      return F.relu(self.fc4(h3))
-
-  def forward(self, x):
-      mu, logvar = self.encode(x.view(-1, self.n_bins))
-      z = self.reparameterize(mu, logvar)
-      return self.decode(z), mu, logvar
-
+# Neural Network
 
 model = VAE(n_bins, n_units, latent_dim).to(device)
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
-# Reconstruction + KL divergence losses summed over all elements and batch
-def loss_function(recon_x, x, mu, logvar, kl_beta):
-    recon_loss = F.mse_loss(recon_x, x.view(-1, n_bins))
-
-    # see Appendix B from VAE paper:
-    # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
-    # https://arxiv.org/abs/1312.6114
-    # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
-    KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
-
-    return recon_loss + ( kl_beta * KLD)
+# Some dummy variables to keep track of loss situation
 
 train_loss_prev = 1000000
+best_loss = 1000000
+final_loss = 1000000
 
 for epoch in range(epochs):
   
@@ -217,25 +203,104 @@ for epoch in range(epochs):
     train_loss += loss.item()
     optimizer.step()
   
-  print('====> Epoch: {} Average loss: {:.9f}'.format(
-          epoch, train_loss / len(training_dataloader.dataset)))
+  print('====> Epoch: {} - Total loss: {} - Average loss: {:.9f}'.format(
+          epoch, train_loss, train_loss / len(training_dataloader.dataset)))
   
-  if epoch % checkpoint_interval == 0: 
-    
+  if epoch % checkpoint_interval == 0 and epoch != 0: 
+    print('Checkpoint - Epoch {}'.format(epoch))
     state = {
       'epoch': epoch,
       'state_dict': model.state_dict(),
       'optimizer': optimizer.state_dict()
-      }
+    }
+    
+    if generate_test:
       
+      init_test = True
+      
+      for iterno, test_tuple in enumerate(test_dataloader):
+        # Checking this....
+        test_sample, = test_tuple
+        with torch.no_grad():
+          test_sample = test_sample.to(device)
+          test_pred_z = model.encode(test_sample)
+          test_pred = model.decode(test_pred_z[0])
+        
+        if init_test:
+          test_predictions = test_pred
+          init_test = False
+        
+        else:
+          test_predictions = torch.cat((test_predictions, test_pred ),0)
+        
+        y_inv_32 = librosa.griffinlim_cqt(test_predictions.permute(1,0).cpu().numpy(), sr=sampling_rate, n_iter=n_iter, hop_length=hop_length, bins_per_octave=bins_per_octave, dtype=dtype)
+        audio_out = audio_log_dir.joinpath('test_reconst_{:05d}.wav'.format( epoch))
+        sf.write( audio_out, y_inv_32, sampling_rate)
+        print('Audio examples generated: {}'.format(audio_out))
+    
     torch.save(state, checkpoint_dir.joinpath('ckpt_{:05d}'.format(epoch)))
   
-  if (train_loss < train_loss_prev) and (save_best_model_after > epoch):
+    if (train_loss < train_loss_prev) and (epoch > save_best_model_after):
+      
+      save_path = workdir.joinpath('model').joinpath('best_model.pt')
+      torch.save(model, save_path)
+      print('Epoch {:05d}: Saved {}'.format(epoch, save_path))
+      config['training']['best_epoch'] = str(epoch)
+      best_loss = train_loss
+
+    elif (train_loss > train_loss_prev):
+      print("Average loss did not improve.")
+  
+  final_loss = train_loss
+
+print('Last Checkpoint - Epoch {}'.format(epoch))
+state = {
+  'epoch': epoch,
+  'state_dict': model.state_dict(),
+  'optimizer': optimizer.state_dict()
+}
+
+if generate_test:
+  
+  init_test = True
+  
+  for iterno, test_tuple in enumerate(test_dataloader):
+    # Checking this....
+    test_sample, = test_tuple
+    with torch.no_grad():
+      test_sample = test_sample.to(device)
+      test_pred_z = model.encode(test_sample)
+      test_pred = model.decode(test_pred_z[0])
     
-    save_path = workdir.joinpath('model').joinpath('best_model.pt')
-    torch.save(model, save_path)
+    if init_test:
+      test_predictions = test_pred
+      init_test = False
+    
+    else:
+      test_predictions = torch.cat((test_predictions, test_pred ),0)
+    
+    y_inv_32 = librosa.griffinlim_cqt(test_predictions.permute(1,0).cpu().numpy(), sr=sampling_rate, n_iter=n_iter, hop_length=hop_length, bins_per_octave=bins_per_octave, dtype=dtype)
+    audio_out = audio_log_dir.joinpath('test_reconst_{:05d}.wav'.format( epochs))
+    sf.write( audio_out, y_inv_32, sampling_rate)
+    print('Last Audio examples generated: {}'.format(audio_out))
 
-save_path = workdir.joinpath('model').joinpath('last_model.pt')
-torch.save(model, save_path)
+# Save the last model as a checkpoint dict
+torch.save(state, checkpoint_dir.joinpath('ckpt_{:05d}'.format(epochs)))
 
-# pdb.set_trace()
+if train_loss > train_loss_prev:
+  print("Final loss was not better than the last best model.")
+  print("Final Loss: {}".format(final_loss))
+  print("Best Loss: {}".format(best_loss))
+  
+  # Save the last model using torch.save 
+  save_path = workdir.joinpath('model').joinpath('last_model.pt')
+  torch.save(model, save_path)
+  print('Training Finished: Saved the last model')
+
+else:
+  print("The last model is the best model.")
+
+with open(config_path, 'w') as configfile:
+  config.write(configfile)
+
+pdb.set_trace()
