@@ -198,7 +198,7 @@ for epoch in range(epochs):
     data = data.to(device)
     optimizer.zero_grad()
     recon_batch, mu, logvar = model(data)
-    loss = loss_function(recon_batch, data, mu, logvar, kl_beta)
+    loss = loss_function(recon_batch, data, mu, logvar, kl_beta, n_bins)
     loss.backward()
     train_loss += loss.item()
     optimizer.step()
@@ -244,9 +244,13 @@ for epoch in range(epochs):
       
       save_path = workdir.joinpath('model').joinpath('best_model.pt')
       torch.save(model, save_path)
+      save_weights_path = workdir.joinpath('model').joinpath('best_model_state.pt')
+      torch.save(state, save_weights_path)
       print('Epoch {:05d}: Saved {}'.format(epoch, save_path))
       config['training']['best_epoch'] = str(epoch)
       best_loss = train_loss
+      config['training']['best_loss'] = str(best_loss)
+
 
     elif (train_loss > train_loss_prev):
       print("Average loss did not improve.")
@@ -291,6 +295,7 @@ if train_loss > train_loss_prev:
   print("Final loss was not better than the last best model.")
   print("Final Loss: {}".format(final_loss))
   print("Best Loss: {}".format(best_loss))
+  config['training']['final_loss'] = str(final_loss)
   
   # Save the last model using torch.save 
   save_path = workdir.joinpath('model').joinpath('last_model.pt')
