@@ -307,5 +307,3 @@ else:
 
 with open(config_path, 'w') as configfile:
   config.write(configfile)
-
-pdb.set_trace()
