@@ -8,8 +8,8 @@ from torch import nn, optim
 from torch.nn import functional as F
 from torchvision import datasets, transforms
 
-from cabbage.model import VAE, loss_function
-from cabbage.tests import init_test_audio
+from ltsp.model import VAE, loss_function
+from ltsp.tests import init_test_audio
 
 import random
 import numpy as np
