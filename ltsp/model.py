@@ -42,6 +42,9 @@ def loss_function(recon_x, x, mu, logvar, kl_beta, n_bins):
   # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
   # https://arxiv.org/abs/1312.6114
   # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
-  KLD = -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
-
+  
+  # The KLD below is the original from the Kingma and Welling. However, the formula is not consistent with the original lts tensorflow repo where 0.5 multiplier combined with the KLD. Thus, yto be consistent with the lts tensorflow repo, the 0.5 is taken out.
+  # KLD = -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
+  
+  KLD = torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
   return recon_loss + ( kl_beta * KLD)
