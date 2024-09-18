@@ -51,7 +51,7 @@ cqt_bit_depth = config['audio'].get('cqt_bit_depth')
 if cqt_bit_depth == "float64":
   torch.set_default_dtype(torch.float64)
   dtype = np.float64
-elif cqt_bit_depth == "float64":
+elif cqt_bit_depth == "float32":
   torch.set_default_dtype(torch.float32)
   dtype = np.float32
 else:
