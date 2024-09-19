@@ -51,9 +51,11 @@ cqt_bit_depth = config['audio'].get('cqt_bit_depth')
 if cqt_bit_depth == "float64":
   torch.set_default_dtype(torch.float64)
   dtype = np.float64
+  print("BIT DEPTH: double")
 elif cqt_bit_depth == "float32":
   torch.set_default_dtype(torch.float32)
   dtype = np.float32
+  print("BIT DEPTH: float")
 else:
   raise TypeError('{} cqt_bit_depth datatype is unknown. Choose either float32 or float64'.format(cqt_bit_depth))
 
@@ -137,7 +139,7 @@ new_loop = True
 
 for f in os.listdir(my_cqt): 
     if f.endswith('.npy'):
-        print('adding-> %s' % f)
+        # print('adding-> %s' % f)
         file_path = my_cqt / f
         new_array = np.load(file_path)
         if new_loop:
