@@ -16,6 +16,7 @@ import numpy as np
 
 import os, sys, argparse, time
 from pathlib import Path
+from packaging.version import Version
 
 import librosa
 import soundfile as sf
@@ -178,7 +179,12 @@ if generate_test:
 # Neural Network
 
 model = VAE(n_bins, n_units, latent_dim).to(device)
-optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+
+if torch.__version__ >= Version("2.0"):
+  # a workaround for a bug in pytorch 2.1.2. Newer versions fixed this. foreach=False is less efficient.
+  optimizer = optim.Adam(model.parameters(), lr=learning_rate, foreach=False )
+else: 
+  optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
 # Some dummy variables to keep track of loss situation
 
