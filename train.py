@@ -155,7 +155,7 @@ total_cqt = len(training_array)
 print('Total number of CQT frames: {}'.format(total_cqt))
 config['dataset']['total_frames'] = str(total_cqt)
 
-training_tensor = torch.Tensor(training_array)
+training_tensor = torch.from_numpy(training_array, dtype=torch_dtype)
 training_dataset = TensorDataset(training_tensor)
 training_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True)
 
@@ -182,11 +182,10 @@ if generate_test:
 
 model = VAE(n_bins, n_units, latent_dim).to(device)
 
-if torch.__version__ >= Version("2.0"):
-  # a workaround for a bug in pytorch 2.1.2. Newer versions fixed this. foreach=False is less efficient.
-  optimizer = optim.Adam(model.parameters(), lr=learning_rate, foreach=False )
-else: 
-  optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+if cqt_bit_depth == "float64":
+  model.double()
+
+optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
 # Some dummy variables to keep track of loss situation
 
