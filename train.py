@@ -49,6 +49,7 @@ n_bins = int(num_octaves * bins_per_octave)
 n_iter = config['audio'].getint('n_iter')
 cqt_bit_depth = config['audio'].get('cqt_bit_depth')
 
+# Below has a workaround since torch.set_default_dtype has a bug with adam optimizer
 if cqt_bit_depth == "float64":
   # torch.set_default_dtype(torch.float64) # this has a known bug on pytorch 2.1.2
   dtype = np.float64
@@ -176,7 +177,7 @@ os.makedirs(log_dir, exist_ok=True)
 
 if generate_test:
 
-  test_dataloader, audio_log_dir = init_test_audio(workdir, test_audio, my_test_audio, my_cqt, batch_size, sampling_rate)
+  test_dataloader, audio_log_dir = init_test_audio(workdir, test_audio, my_test_audio, my_cqt, batch_size, sampling_rate, dtype=torch_dtype)
 
 # Neural Network
 
