@@ -50,12 +50,14 @@ n_iter = config['audio'].getint('n_iter')
 cqt_bit_depth = config['audio'].get('cqt_bit_depth')
 
 if cqt_bit_depth == "float64":
-  torch.set_default_dtype(torch.float64)
+  # torch.set_default_dtype(torch.float64) # this has a known bug on pytorch 2.1.2
   dtype = np.float64
+  torch_dtype = torch.float64
   print("BIT DEPTH: double")
 elif cqt_bit_depth == "float32":
-  torch.set_default_dtype(torch.float32)
+  # torch.set_default_dtype(torch.float32) # this has a known bug on pytorch 2.1.2
   dtype = np.float32
+  torch_dtype = torch.float32
   print("BIT DEPTH: float")
 else:
   raise TypeError('{} cqt_bit_depth datatype is unknown. Choose either float32 or float64'.format(cqt_bit_depth))
