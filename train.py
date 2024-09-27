@@ -156,7 +156,7 @@ total_cqt = len(training_array)
 print('Total number of CQT frames: {}'.format(total_cqt))
 config['dataset']['total_frames'] = str(total_cqt)
 
-training_tensor = torch.from_numpy(training_array, dtype=torch_dtype)
+training_tensor = torch.from_numpy(training_array)
 training_dataset = TensorDataset(training_tensor)
 training_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True)
 

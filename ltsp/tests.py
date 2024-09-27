@@ -37,7 +37,7 @@ def init_test_audio(workdir, test_audio, my_test_audio, my_cqt, batch_size, samp
       test_dataset_cqt = np.concatenate((test_dataset_cqt, cqt_full ),axis=0)
   
   # Create a dataloader for test dataset
-  test_tensor = torch.from_numpy(test_dataset_cqt, dtype=dtype)
+  test_tensor = torch.from_numpy(test_dataset_cqt)
   test_dataset = TensorDataset(test_tensor)
   test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
   
