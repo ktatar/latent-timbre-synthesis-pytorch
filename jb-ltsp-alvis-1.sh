@@ -15,6 +15,6 @@ source /cephyr/users/tatar/Alvis/ltsp/bin/activate
 
 cd /cephyr/users/tatar/Alvis/code/latent-timbre-synthesis-pytorch
 
-# python create_dataset.py --config ./default-alvis.ini
+python create_dataset.py --config ./default-alvis.ini
 
 python ./train.py --config ./default-alvis.ini
