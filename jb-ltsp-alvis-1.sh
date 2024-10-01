@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #SBATCH -A NAISS2024-22-16 -p alvis
-#SBATCH -t 2-00:00:00
-#SBATCH --gpus-per-node=A100:1
+#SBATCH -t 3-00:00:00
+#SBATCH --gpus-per-node=A40:1
 #SBATCH --mail-user=tatar@chalmers.se
 #SBATCH --mail-type=BEGIN
 #SBATCH --mail-type=END
