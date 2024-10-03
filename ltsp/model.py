@@ -47,4 +47,4 @@ def loss_function(recon_x, x, mu, logvar, kl_beta, n_bins):
   # KLD = -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
   
   KLD = torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
-  return recon_loss + ( kl_beta * KLD)
+  return recon_loss + ( -1 * kl_beta * KLD)
