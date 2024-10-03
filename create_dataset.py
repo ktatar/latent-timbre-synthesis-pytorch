@@ -74,7 +74,7 @@ def calculate_cqt(f):
         if cqt_bit_depth == 'float32':
             C = C.astype('float32')
         elif cqt_bit_depth == 'float64':
-            pass
+            C = C.astype('float64')
         else:
             raise TypeError('cqt_bit_depth datatype is unknown. Choose either float32 or float64')
         print('writing: {}'.format(outfile))

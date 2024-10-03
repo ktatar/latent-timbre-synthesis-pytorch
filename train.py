@@ -16,6 +16,7 @@ import numpy as np
 
 import os, sys, argparse, time
 from pathlib import Path
+from packaging.version import Version
 
 import librosa
 import soundfile as sf
@@ -48,13 +49,16 @@ n_bins = int(num_octaves * bins_per_octave)
 n_iter = config['audio'].getint('n_iter')
 cqt_bit_depth = config['audio'].get('cqt_bit_depth')
 
+# Below has a workaround since torch.set_default_dtype has a bug with adam optimizer
 if cqt_bit_depth == "float64":
-  torch.set_default_dtype(torch.float64)
+  # torch.set_default_dtype(torch.float64) # this has a known bug on pytorch 2.1.2
   dtype = np.float64
+  torch_dtype = torch.float64
   print("BIT DEPTH: double")
 elif cqt_bit_depth == "float32":
-  torch.set_default_dtype(torch.float32)
+  # torch.set_default_dtype(torch.float32) # this has a known bug on pytorch 2.1.2
   dtype = np.float32
+  torch_dtype = torch.float32
   print("BIT DEPTH: float")
 else:
   raise TypeError('{} cqt_bit_depth datatype is unknown. Choose either float32 or float64'.format(cqt_bit_depth))
@@ -152,7 +156,7 @@ total_cqt = len(training_array)
 print('Total number of CQT frames: {}'.format(total_cqt))
 config['dataset']['total_frames'] = str(total_cqt)
 
-training_tensor = torch.Tensor(training_array)
+training_tensor = torch.from_numpy(training_array)
 training_dataset = TensorDataset(training_tensor)
 training_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True)
 
@@ -173,11 +177,15 @@ os.makedirs(log_dir, exist_ok=True)
 
 if generate_test:
 
-  test_dataloader, audio_log_dir = init_test_audio(workdir, test_audio, my_test_audio, my_cqt, batch_size, sampling_rate)
+  test_dataloader, audio_log_dir = init_test_audio(workdir, test_audio, my_test_audio, my_cqt, batch_size, sampling_rate, dtype=torch_dtype)
 
 # Neural Network
 
 model = VAE(n_bins, n_units, latent_dim).to(device)
+
+if cqt_bit_depth == "float64":
+  model.double()
+
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
 # Some dummy variables to keep track of loss situation

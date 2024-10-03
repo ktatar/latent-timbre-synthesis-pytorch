@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #SBATCH -A NAISS2024-22-16 -p alvis
-#SBATCH -t 0-18:00:00
-#SBATCH --gpus-per-node=A40:1
+#SBATCH -t 5-00:00:00
+#SBATCH --gpus-per-node=A100:1
 #SBATCH --mail-user=tatar@chalmers.se
 #SBATCH --mail-type=BEGIN
 #SBATCH --mail-type=END
@@ -15,6 +15,6 @@ source /cephyr/users/tatar/Alvis/ltsp/bin/activate
 
 cd /cephyr/users/tatar/Alvis/code/latent-timbre-synthesis-pytorch
 
-# python create_dataset.py --config ./default-alvis.ini
+python create_dataset.py --config ./default-alvis.ini
 
-python ./train.py --config ./default-alvis.ini
+# python ./train.py --config ./default-alvis.ini
