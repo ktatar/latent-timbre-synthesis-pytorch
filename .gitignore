@@ -16,5 +16,5 @@
 **/functional/cqtgan
 **/functional/cvae
 **cdr*.out
-
+**slurm*.out
 
