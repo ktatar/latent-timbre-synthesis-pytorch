@@ -36,7 +36,7 @@ class VAE(nn.Module):
 
 # Reconstruction + KL divergence losses summed over all elements and batch
 def loss_function(recon_x, x, mu, logvar, kl_beta, n_bins):
-  recon_loss = F.mse_loss(recon_x, x.view(-1, n_bins))
+  recon_loss = F.mse_loss(recon_x, x.view(-1, n_bins), reduction='sum')
 
   # see Appendix B from VAE paper:
   # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
