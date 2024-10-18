@@ -111,7 +111,7 @@ desc = config['extra'].get('description')
 start_time = time.time()
 config['extra']['start'] = time.asctime( time.localtime(start_time) )
 
-device = torch.device(device)
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 device_name = torch.cuda.get_device_name()
 print('Device: {}'.format(device_name))
 config['VAE']['device_name'] = device_name
