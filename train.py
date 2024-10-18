@@ -181,7 +181,10 @@ if generate_test:
 
 # Neural Network
 
-model = VAE(n_bins, n_units, latent_dim).to(device)
+if device == "cuda":
+  model = VAE(n_bins, n_units, latent_dim).to(device)
+else: 
+  model = VAE(n_bins, n_units, latent_dim)
 
 if cqt_bit_depth == "float64":
   model.double()
@@ -205,7 +208,8 @@ for epoch in range(epochs):
   for i, data in enumerate(training_dataloader):
     
     data, = data
-    data = data.to(device)
+    if device == "cuda":
+      data = data.to(device)
     optimizer.zero_grad()
     recon_batch, mu, logvar = model(data)
     loss = loss_function(recon_batch, data, mu, logvar, kl_beta, n_bins)
@@ -232,7 +236,8 @@ for epoch in range(epochs):
         # Checking this....
         test_sample, = test_tuple
         with torch.no_grad():
-          test_sample = test_sample.to(device)
+          if device == "cuda":
+            test_sample = test_sample.to(device)
           test_pred_z = model.encode(test_sample)
           test_pred = model.decode(test_pred_z[0])
         
@@ -282,7 +287,8 @@ if generate_test:
     # Checking this....
     test_sample, = test_tuple
     with torch.no_grad():
-      test_sample = test_sample.to(device)
+      if device == "cuda":
+        test_sample = test_sample.to(device)
       test_pred_z = model.encode(test_sample)
       test_pred = model.decode(test_pred_z[0])
     
