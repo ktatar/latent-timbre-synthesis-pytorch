@@ -312,6 +312,9 @@ if generate_test:
     sf.write( audio_out, y_inv_32, sampling_rate)
     print('Last Audio examples generated: {}'.format(audio_out))
 
+    #TensorBoard ReconstructedAudio
+    writer.add_audio('Reconstructed Audio', y_inv_32, epoch, sample_rate=sampling_rate)
+
 # Save the last model as a checkpoint dict
 torch.save(state, checkpoint_dir.joinpath('ckpt_{:05d}'.format(epochs)))
 
