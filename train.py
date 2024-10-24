@@ -331,3 +331,5 @@ else:
 
 with open(config_path, 'w') as configfile:
   config.write(configfile)
+
+writer.close()
