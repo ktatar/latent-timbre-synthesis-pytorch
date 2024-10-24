@@ -256,6 +256,7 @@ for epoch in range(epochs):
         else:
           test_predictions = torch.cat((test_predictions, test_pred ),0)
         
+        
         y_inv_32 = librosa.griffinlim_cqt(test_predictions.permute(1,0).cpu().numpy(), sr=sampling_rate, n_iter=n_iter, hop_length=hop_length, bins_per_octave=bins_per_octave, dtype=dtype)
         audio_out = audio_log_dir.joinpath('test_reconst_{:05d}.wav'.format( epoch))
         sf.write( audio_out, y_inv_32, sampling_rate)
