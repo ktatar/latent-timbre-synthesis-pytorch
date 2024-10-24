@@ -260,7 +260,10 @@ for epoch in range(epochs):
         audio_out = audio_log_dir.joinpath('test_reconst_{:05d}.wav'.format( epoch))
         sf.write( audio_out, y_inv_32, sampling_rate)
         print('Audio examples generated: {}'.format(audio_out))
-    
+        
+        #TensorBoard ReconstructedAudio
+        writer.add_audio('Reconstructed Audio', y_inv_32, epoch, sample_rate=sampling_rate)
+
     torch.save(state, checkpoint_dir.joinpath('ckpt_{:05d}'.format(epoch)))
   
     if (train_loss < train_loss_prev) and (epoch > save_best_model_after):
