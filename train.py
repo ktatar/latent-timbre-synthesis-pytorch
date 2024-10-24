@@ -170,8 +170,11 @@ model_dir = workdir / "model"
 checkpoint_dir = model_dir / 'checkpoints'
 os.makedirs(checkpoint_dir, exist_ok=True)
 
+# Logging
 log_dir = workdir / 'logs'
 os.makedirs(log_dir, exist_ok=True)
+
+writer = SummaryWriter(log_dir=log_dir)
 
 # Move this part below to a util function in a python module
 
