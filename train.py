@@ -219,10 +219,15 @@ for epoch in range(epochs):
     loss.backward()
     train_loss += loss.item()
     optimizer.step()
+    
+    # Log learning rate
+    writer.add_scalar('Learning Rate', optimizer.param_groups[0]['lr'], epoch * len(training_dataloader) + i)  #🪵 Log learning rate
   
   print('====> Epoch: {} - Total loss: {} - Average loss: {:.9f}'.format(
           epoch, train_loss, train_loss / len(training_dataloader.dataset)))
-  
+  writer.add_scalar('Loss/train_total', train_loss, epoch) # 🪵Log the loss 
+  writer.add_scalar('Loss/train_average', train_loss / len(training_dataset), epoch) # 🪵Log the loss 
+
   if epoch % checkpoint_interval == 0 and epoch != 0: 
     print('Checkpoint - Epoch {}'.format(epoch))
     state = {
