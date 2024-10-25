@@ -9,7 +9,7 @@
 #SBATCH --mail-type=REQUEUE
 #SBATCH --mail-type=ALL
 
-module load virtualenv/20.23.1-GCCcore-12.3.0 PyTorch/2.1.2-foss-2023a-CUDA-12.1.1 SciPy-bundle/2023.07-gfbf-2023a matplotlib/3.7.2-gfbf-2023a torchvision/0.16.0-foss-2023a-CUDA-12.1.1  
+module load virtualenv/20.23.1-GCCcore-12.3.0 PyTorch-bundle/2.1.2-foss-2023a-CUDA-12.1.1 SciPy-bundle/2023.07-gfbf-2023a matplotlib/3.7.2-gfbf-2023a torchvision/0.16.0-foss-2023a-CUDA-12.1.1  
 sleep 5
 source /cephyr/users/tatar/Alvis/ltsp/bin/activate
 
