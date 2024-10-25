@@ -7,6 +7,7 @@ from torch.utils.data import Dataset, TensorDataset, DataLoader
 from torch import nn, optim
 from torch.nn import functional as F
 from torchvision import datasets, transforms
+from torch.utils.tensorboard import SummaryWriter
 
 from ltsp.model import VAE, loss_function
 from ltsp.tests import init_test_audio
