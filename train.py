@@ -212,6 +212,7 @@ for epoch in range(epochs):
   for i, data in enumerate(training_dataloader):
     
     data, = data
+    pdb.set_trace()
     if device == "cuda":
       data = data.to(device)
     optimizer.zero_grad()
