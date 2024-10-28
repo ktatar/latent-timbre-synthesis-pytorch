@@ -215,7 +215,7 @@ for epoch in range(epochs):
     if device == "cuda":
       data = data.to(device)
     optimizer.zero_grad()
-    pdb.set_trace()
+
     recon_batch, mu, logvar = model(data)
     loss = loss_function(recon_batch, data, mu, logvar, kl_beta, n_bins)
     loss.backward()
