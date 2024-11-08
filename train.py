@@ -248,8 +248,7 @@ for epoch in range(epochs):
         with torch.no_grad():
           if device == "cuda":
             test_sample = test_sample.to(device)
-          test_pred_z = model.encode(test_sample)
-          test_pred = model.decode(test_pred_z[0])
+          test_pred, mu, logvar = model(test_sample)
         
         if init_test:
           test_predictions = test_pred
@@ -303,9 +302,8 @@ if generate_test:
     with torch.no_grad():
       if device == "cuda":
         test_sample = test_sample.to(device)
-      test_pred_z = model.encode(test_sample)
-      test_pred = model.decode(test_pred_z[0])
-    
+      test_pred, mu, logvar = model(test_sample)
+
     if init_test:
       test_predictions = test_pred
       init_test = False
